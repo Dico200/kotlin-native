@@ -27,6 +27,12 @@ class LinkData(
     val module: ByteArray,
     val fragments: List<List<ByteArray>>,
     val fragmentNames: List<String> 
+    val ir: SerializedIr? = null
+)
+
+class SerializedIr (
+    val module: ByteArray,
+    val declarations: Map<Long, ByteArray>
 )
 
 interface MetadataWriter {

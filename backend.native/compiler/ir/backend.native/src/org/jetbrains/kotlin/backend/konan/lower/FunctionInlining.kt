@@ -15,8 +15,8 @@ import org.jetbrains.kotlin.backend.konan.descriptors.isFunctionInvoke
 import org.jetbrains.kotlin.backend.konan.descriptors.needsInlining
 import org.jetbrains.kotlin.backend.konan.descriptors.propertyIfAccessor
 import org.jetbrains.kotlin.backend.konan.descriptors.resolveFakeOverride
-import org.jetbrains.kotlin.backend.konan.ir.DeserializerDriver
 import org.jetbrains.kotlin.config.languageVersionSettings
+import org.jetbrains.kotlin.backend.konan.llvm.symbolName
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
@@ -48,7 +48,7 @@ import org.jetbrains.kotlin.types.TypeSubstitutor
 
 internal class FunctionInlining(val context: Context): IrElementTransformerVoidWithContext() {
 
-    private val deserializer = DeserializerDriver(context)
+    //private val deserializer = DeserializerDriver(context)
     private val globalSubstituteMap = mutableMapOf<DeclarationDescriptor, SubstitutedDescriptor>()
 
     //-------------------------------------------------------------------------//
@@ -98,8 +98,8 @@ internal class FunctionInlining(val context: Context): IrElementTransformerVoidW
 
                     else -> {
                         val functionDeclaration =
-                                context.ir.originalModuleIndex.functions[it] ?:             // If function is declared in the current module.
-                                deserializer.deserializeInlineBody(it)                      // Function is declared in another module.
+                                context.ir.originalModuleIndex.functions[it] //?:             // If function is declared in the current module.
+                                //deserializer.deserializeInlineBody(it)                      // Function is declared in another module.
                         functionDeclaration as IrFunction?
                     }
                 }
@@ -120,6 +120,10 @@ private class Inliner(val globalSubstituteMap: MutableMap<DeclarationDescriptor,
                       val currentScope: ScopeWithIr,
                       val context: Context,
                       val owner: FunctionInlining /*TODO: make inner*/) {
+
+    init {
+        println("### inliner: ${functionDeclaration.name}") /*, ${functionDeclaration.symbolName} */
+    }
 
     val copyIrElement = DeepCopyIrTreeWithDescriptors(functionDeclaration.descriptor, currentScope.scope.scopeOwner, context) // Create DeepCopy for current scope.
     val substituteMap = mutableMapOf<ValueDescriptor, IrExpression>()

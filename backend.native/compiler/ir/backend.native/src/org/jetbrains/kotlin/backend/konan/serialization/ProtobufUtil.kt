@@ -9,14 +9,16 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.metadata.KonanIr
 import org.jetbrains.kotlin.metadata.konan.KonanProtoBuf
-import org.jetbrains.kotlin.metadata.konan.KonanProtoBuf.*
 import org.jetbrains.kotlin.metadata.ProtoBuf
 
 fun newUniqId(index: Long): KonanIr.UniqId =
-   KonanIr.UniqId.newBuilder().setIndex(index).build() 
+   KonanIr.UniqId.newBuilder().setIndex(index).build()
+
+fun newDescriptorUniqId(index: Long): KonanProtoBuf.DescriptorUniqId =
+    KonanProtoBuf.DescriptorUniqId.newBuilder().setIndex(index).build()
 
 // -----------------------------------------------------------
-
+/*
 val KonanIr.KotlinDescriptor.index: Long
     get() = this.uniqId.index
 
@@ -86,7 +88,7 @@ internal fun printTypeTable(proto: ProtoBuf.TypeTable) {
         printType(it)
     }
 }
-
+*/
 // -----------------------------------------------------------
 
 internal val DeclarationDescriptor.typeParameterProtos: List<ProtoBuf.TypeParameter>
@@ -107,3 +109,10 @@ internal val DeclarationDescriptor.typeParameterProtos: List<ProtoBuf.TypeParame
     }
 
 
+fun DeclarationDescriptor.getUniqId(): KonanProtoBuf.DescriptorUniqId? = when (this) {
+    is DeserializedClassDescriptor -> this.classProto.getExtension(KonanProtoBuf.classUniqId)
+    is DeserializedSimpleFunctionDescriptor -> this.proto.getExtension(KonanProtoBuf.functionUniqId)
+    is DeserializedPropertyDescriptor -> this.proto.getExtension(KonanProtoBuf.propertyUniqId)
+    is DeserializedClassConstructorDescriptor -> this.proto.getExtension(KonanProtoBuf.constructorUniqId)
+    else -> null
+}

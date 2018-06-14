@@ -12,6 +12,8 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.metadata.ProtoBuf
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
 import org.jetbrains.kotlin.metadata.konan.KonanProtoBuf
+import org.jetbrains.kotlin.backend.konan.library.SerializedIr
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.checkers.ExpectedActualDeclarationChecker
@@ -33,7 +35,7 @@ import org.jetbrains.kotlin.serialization.KonanDescriptorSerializer
  * with MemberDeserializer class.
  */
 
-internal class KonanSerializationUtil(val context: Context, private val metadataVersion: BinaryVersion) {
+internal class KonanSerializationUtil(val context: Context, metadataVersion: BinaryVersion, declarationTable: DeclarationTable) {
 
     lateinit var serializerContext: SerializerContext
 
@@ -42,9 +44,8 @@ internal class KonanSerializationUtil(val context: Context, private val metadata
             val topSerializer: KonanDescriptorSerializer,
             var classSerializer: KonanDescriptorSerializer = topSerializer
     )
-
     private fun createNewContext(): SerializerContext {
-        val extension = KonanSerializerExtension(context, metadataVersion)
+        val extension = KonanSerializerExtension(context, metadataVersion, declarationTable)
         return SerializerContext(
                 extension,
                 KonanDescriptorSerializer.createTopLevel(context, extension)
@@ -62,9 +63,9 @@ internal class KonanSerializationUtil(val context: Context, private val metadata
         with(serializerContext) {
             val previousSerializer = classSerializer
 
-            // TODO: this is to filter out object{}. Change me.
-            if (classDescriptor.isExported())
-                classSerializer = KonanDescriptorSerializer.create(context, classDescriptor, serializerExtension)
+        // TODO: this is to filter out object{}. Change me.
+        // if (classDescriptor.isExported())
+            // classSerializer = KonanDescriptorSerializer.create(classDescriptor, serializerExtension)
 
             val classProto = classSerializer.classProto(classDescriptor).build()
                     ?: error("Class not serialized: $classDescriptor")
@@ -206,7 +207,7 @@ internal class KonanSerializationUtil(val context: Context, private val metadata
                 .build()
     }
 
-    internal fun serializeModule(moduleDescriptor: ModuleDescriptor): LinkData {
+    internal fun serializeModule(moduleDescriptor: ModuleDescriptor, serializedIr: SerializedIr): LinkData {
         val libraryProto = KonanProtoBuf.LinkDataLibrary.newBuilder()
         libraryProto.moduleName = moduleDescriptor.name.asString()
         val fragments = mutableListOf<List<ByteArray>>()
@@ -225,7 +226,7 @@ internal class KonanSerializationUtil(val context: Context, private val metadata
             fragmentNames.add(packageFqNameStr)
         }
         val libraryAsByteArray = libraryProto.build().toByteArray()
-        return LinkData(libraryAsByteArray, fragments, fragmentNames)
+        return LinkData(libraryAsByteArray, fragments, fragmentNames, serializedIr)
     }
 }
 

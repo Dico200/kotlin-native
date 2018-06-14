@@ -289,14 +289,30 @@ fun IrClass.setSuperSymbols(superTypes: List<IrType>) {
     assert(this.superTypes.isEmpty())
     this.superTypes += superTypes
 
+    println("### setSuperSymbols for $this ${this.name}")
+
+    println("### supers:")
+    supers.forEach { println(it.name) }
+
     val superMembers = supers.flatMap {
         it.simpleFunctions()
-    }.associateBy { it.descriptor }
+    }.associateBy {
+        it.descriptor
+    }
 
+    println("### superMembers:")
+    superMembers.forEach {
+        println("${it.key} -> ${it.value}")
+    }
+
+    println("### simpleFunctions:")
     this.simpleFunctions().forEach {
         assert(it.overriddenSymbols.isEmpty())
 
+        println("   member: ${it.name}")
+
         it.descriptor.overriddenDescriptors.mapTo(it.overriddenSymbols) {
+            println("   overridden by ${it.name}")
             val superMember = superMembers[it.original] ?: error(it.original)
             superMember.symbol
         }
@@ -328,6 +344,16 @@ fun IrClass.setSuperSymbolsAndAddFakeOverrides(superTypes: List<IrType>) {
             }
         }
     }.toMap()
+
+    println("### overriddenSuperMembers:")
+    overriddenSuperMembers.forEach {
+        println("   $it")
+    }
+
+    println("### unoverriddenSuperMembers:")
+    unoverriddenSuperMembers.forEach {
+        println("   ${it.key} -> ${it.value.name}")
+    }
 
     val irClass = this
 

@@ -431,7 +431,16 @@ internal class KonanSymbols(context: Context, val symbolTable: SymbolTable, val 
 
     val kLocalDelegatedPropertyImpl = symbolTable.referenceClass(context.reflectionTypes.kLocalDelegatedPropertyImpl)
     val kLocalDelegatedMutablePropertyImpl = symbolTable.referenceClass(context.reflectionTypes.kLocalDelegatedMutablePropertyImpl)
+/*
+    val kMutableProperty0Impl = symbolTable.referenceClass(context.reflectionTypes.kMutableProperty0Impl)
+    val kProperty0Impl = symbolTable.referenceClass(context.reflectionTypes.kProperty0Impl)
+    val kMutableProperty1Impl = symbolTable.referenceClass(context.reflectionTypes.kMutableProperty1Impl)
+    val kProperty1Impl = symbolTable.referenceClass(context.reflectionTypes.kProperty1Impl)
+    val kMutableProperty2Impl = symbolTable.referenceClass(context.reflectionTypes.kMutableProperty2Impl)
+    val kProperty2Impl = symbolTable.referenceClass(context.reflectionTypes.kMutableProperty2Impl)
 
+    val kFunctionImpl = symbolTable.referenceClass(context.reflectionTypes.kFunctionImpl)
+*/
     val getClassTypeInfo = internalFunction("getClassTypeInfo")
     val getObjectTypeInfo = internalFunction("getObjectTypeInfo")
     val kClassImpl = internalClass("KClassImpl")

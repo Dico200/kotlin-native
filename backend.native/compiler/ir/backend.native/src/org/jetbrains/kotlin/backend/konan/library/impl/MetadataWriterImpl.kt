@@ -12,6 +12,7 @@ internal class MetadataWriterImpl(libraryLayout: KonanLibraryLayout): KonanLibra
 
     fun addLinkData(linkData: LinkData) {
         moduleHeaderFile.writeBytes(linkData.module)
+        wholeIrFile.writeBytes(linkData.ir!!.module)
         linkData.fragments.forEachIndexed { index, it ->
             val packageFqName = linkData.fragmentNames[index]
             val shortName = packageFqName.substringAfterLast(".")
@@ -23,6 +24,9 @@ internal class MetadataWriterImpl(libraryLayout: KonanLibraryLayout): KonanLibra
             for ((i, fragment) in it.withIndex()) {
                 packageFragmentFile(packageFqName, "${withLeadingZeros(i)}_$shortName").writeBytes(fragment)
             }
+        }
+        linkData.ir!!.declarations.forEach {
+            declarationFile(it.key.toString(16)).writeBytes(it.value)
         }
     }
 }

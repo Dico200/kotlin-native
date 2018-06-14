@@ -6,17 +6,21 @@
 package org.jetbrains.kotlin.backend.konan
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.backend.common.WithLogger
+import org.jetbrains.kotlin.backend.common.ir.ir2stringWhole
+import org.jetbrains.kotlin.backend.common.validateIrModule
 import org.jetbrains.kotlin.backend.konan.ir.KonanSymbols
 import org.jetbrains.kotlin.backend.konan.ir.ModuleIndex
 import org.jetbrains.kotlin.backend.konan.llvm.emitLLVM
-import org.jetbrains.kotlin.backend.konan.serialization.KonanSerializationUtil
-import org.jetbrains.kotlin.backend.konan.serialization.markBackingFields
+import org.jetbrains.kotlin.backend.konan.serialization.*
 import org.jetbrains.kotlin.cli.common.messages.AnalyzerWithCompilerReport
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.languageVersionSettings
+import org.jetbrains.kotlin.konan.utils.KonanFactories.DefaultDeserializedDescriptorFactory
 import org.jetbrains.kotlin.psi2ir.Psi2IrConfiguration
 import org.jetbrains.kotlin.psi2ir.Psi2IrTranslator
+import org.jetbrains.kotlin.storage.LockBasedStorageManager
 
 fun runTopLevelPhases(konanConfig: KonanConfig, environment: KotlinCoreEnvironment) {
 
@@ -64,7 +68,14 @@ fun runTopLevelPhases(konanConfig: KonanConfig, environment: KotlinCoreEnvironme
 
         val symbols = KonanSymbols(context, generatorContext.symbolTable, generatorContext.symbolTable.lazyWrapper)
 
-        val module = translator.generateModuleFragment(generatorContext, environment.getSourceFiles())
+        val deserializer = IrModuleDeserialization(context as WithLogger, generatorContext.irBuiltIns)
+        val specifics = context.config.configuration.get(CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS)!!
+        val dependencies = context.config.resolvedLibraries.getFullList().map {
+            val moduleDescriptor = DefaultDeserializedDescriptorFactory.createDescriptorAndNewBuiltIns(it, specifics,  LockBasedStorageManager())
+            deserializer.deserializedIrModule(moduleDescriptor, it.wholeIr, {index -> it.irDeclaration(index)})
+        }
+
+        val module = translator.generateModuleFragment(generatorContext, environment.getSourceFiles(), deserializer)
 
         context.irModule = module
         context.ir.symbols = symbols
@@ -81,9 +92,12 @@ fun runTopLevelPhases(konanConfig: KonanConfig, environment: KotlinCoreEnvironme
         markBackingFields(context)
     }
     phaser.phase(KonanPhase.SERIALIZER) {
-        val serializer = KonanSerializationUtil(context, context.config.configuration.get(CommonConfigurationKeys.METADATA_VERSION)!!)
+        val declarationTable = DeclarationTable(context.irModule!!.irBuiltins)
+        val serializedIr = IrModuleSerialization(context, declarationTable).serializedIrModule(context.irModule!!)
+
+        val serializer = KonanSerializationUtil(context, context.config.configuration.get(CommonConfigurationKeys.METADATA_VERSION)!!, declarationTable)
         context.serializedLinkData =
-            serializer.serializeModule(context.moduleDescriptor)
+            serializer.serializeModule(context.moduleDescriptor, serializedIr)
     }
     phaser.phase(KonanPhase.BACKEND) {
         phaser.phase(KonanPhase.LOWER) {
