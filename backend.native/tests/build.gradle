@@ -3031,7 +3031,7 @@ task runKonanRegexTests(type: RunKonanTest) {
 
 task buildKonanStdlibTests(type: BuildKonanTest) {
     outputSourceSetName = "testOutputStdlib"
-    flags = [ "-Xmulti-platform", "-friend-modules", project.rootProject.file("dist/klib/common/stdlib") ]
+    flags = [ "-Xmulti-platform", "-friend-modules", project.rootProject.file("dist/klib/common/stdlib").absolutePath ]
     def testSources = externalStdlibTestsDir.absolutePath
     compileList = [ "$testSources/stdlib/test", "$testSources/stdlib/common",
                     "stdlib_external/utils.kt", "stdlib_external/jsCollectionFactoriesActuals.kt" ]
