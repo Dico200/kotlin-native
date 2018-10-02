@@ -412,7 +412,12 @@ class RunStdlibTest extends RunKonanTest {
     public def statistics = new RunExternalTestGroup.Statistics()
 
     RunStdlibTest() {
-        super('buildKonanStdlibTests')
+        super("compileKonanStdlibTest")
+    }
+
+    @Override
+    String buildExePath() {
+        return "$outputDirectory/${target.name}/stdlibTest"
     }
 
     @Override
@@ -422,7 +427,7 @@ class RunStdlibTest extends RunKonanTest {
         } finally {
             def output = out.toString("UTF-8")
 
-            // NOTE: these regexs assert that GTEST output format is used
+            // NOTE: these regexps assert that GTEST output format is used
             def matcher = (output =~ ~/\[==========\] Running ([0-9]*) tests from ([0-9]*) test cases \. .*/)
             def testsTotal = 0
             if (matcher) {
