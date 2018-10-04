@@ -409,7 +409,7 @@ class RunKonanTest extends ExtKonanTest {
 
 class RunStdlibTest extends RunKonanTest {
     public def inDevelopersRun = false
-    public def statistics = new RunExternalTestGroup.Statistics()
+    public def statistics = new Statistics()
 
     RunStdlibTest() {
         super("compileKonanStdlibTest")
@@ -604,41 +604,6 @@ class RunExternalTestGroup extends RunStandaloneKonanTest {
         TestResult(TestStatus status, String comment = ""){
             this.status = status;
             this.comment = comment;
-        }
-    }
-    static class Statistics {
-        int total = 0
-        int passed = 0
-        int failed = 0
-        int error = 0
-        int skipped = 0
-
-        void pass(int count = 1) {
-            passed += count
-            total += count
-        }
-
-        void skip(int count = 1) {
-            skipped += count
-            total += count
-        }
-
-        void fail(int count = 1) {
-            failed += count
-            total += count
-        }
-
-        void error(int count = 1) {
-            error += count
-            total += count
-        }
-
-        void add(Statistics other) {
-            total   += other.total
-            passed  += other.passed
-            failed  += other.failed
-            error   += other.error
-            skipped += other.skipped
         }
     }
 

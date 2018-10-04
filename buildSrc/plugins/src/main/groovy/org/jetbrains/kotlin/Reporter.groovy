@@ -54,7 +54,7 @@ class Reporter extends DefaultTask {
         def testReportUrl = testReportUrl(buildId, buildTypeId)
         def epilogue = "\nlog url: $logUrl\ntest report url: $testReportUrl"
 
-        def stats = new RunExternalTestGroup.Statistics()
+        def stats = new Statistics()
         def resultsFile = new File(reportHome, "external/results.json")
         def report
 

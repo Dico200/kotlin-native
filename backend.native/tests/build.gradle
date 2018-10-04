@@ -147,14 +147,14 @@ run {
 task resultsTask() {
     doLast {
         Map<String, Map<String, RunExternalTestGroup.TestResult>> results = [:]
-        def statistics = new RunExternalTestGroup.Statistics()
+        def statistics = new Statistics()
         tasks.withType(RunExternalTestGroup).matching { it.state.executed }.each {
             results.put(it.name, it.results)
-            statistics.add(it.statistics)
+            statistics += it.statistics
         }
         
-        tasks.withType(RunStdlibTest).matching {it.state.executed }.each {
-            statistics.add(it.statistics)
+        tasks.withType(KonanStdlibTestRunner).matching {it.state.executed }.each {
+            statistics += it.statistics
         }
 
         def output = ["statistics": statistics, "tests": results]
@@ -216,7 +216,7 @@ task run_external () {
     createTestTasks(externalTestsDir, RunExternalTestGroup) { }
 
     // Set up dependencies.
-    dependsOn(tasksOf { it instanceof RunExternalTestGroup || it instanceof RunStdlibTest })
+    dependsOn(tasksOf { it instanceof RunExternalTestGroup || it instanceof KonanStdlibTestRunner })
 }
 
 task daily() {
@@ -2982,19 +2982,20 @@ task library_mismatch(type: RunStandaloneKonanTest) {
     goldValue = isWindows() ? messages.replaceAll('\\/', '\\\\') : messages
 }
 
-def target = ext.platformManager.targetByName(project.testTarget ?: 'host').name
+def target = ext.platformManager.targetByName(project.testTarget ?: 'host')
+def targetName = target.name
 
 if (isMac() && project.testTarget != 'wasm32') {
 
     task testValuesFramework(type: FrameworkTest) {
         frameworkName = 'Values'
         konanArtifacts {
-            framework(frameworkName, targets: [ target ]) {
+            framework(frameworkName, targets: [ targetName ]) {
                 srcDir 'framework/values'
                 baseDir "$testOutputFramework/$frameworkName"
 
                 if (!useCustomDist) {
-                    dependsOn ":${target}CrossDistRuntime", ':commonDistRuntime', ':distCompiler'
+                    dependsOn ":${targetName}CrossDistRuntime", ':commonDistRuntime', ':distCompiler'
                 }
             }
         }
@@ -3004,12 +3005,12 @@ if (isMac() && project.testTarget != 'wasm32') {
     task testStdlibFramework(type: FrameworkTest) {
         frameworkName = 'Stdlib'
         konanArtifacts {
-            framework(frameworkName, targets: [ target ]) {
+            framework(frameworkName, targets: [ targetName ]) {
                 srcDir 'framework/stdlib'
                 baseDir "$testOutputFramework/$frameworkName"
 
                 if (!useCustomDist) {
-                    dependsOn ":${target}CrossDistRuntime", ':commonDistRuntime', ':distCompiler'
+                    dependsOn ":${targetName}CrossDistRuntime", ':commonDistRuntime', ':distCompiler'
                 }
             }
         }
@@ -3041,12 +3042,12 @@ List<String> getKtFilesFrom(String dir, String filter) {
 }
 
 
-task runStdlibTests(type: RunStdlibTest) {
+task runStdlibTests(type: KonanStdlibTestRunner) {
     def sources = getKtFilesFrom('build/stdlib_external/stdlib', 'internalAnnotations.kt') +
             [ "stdlib_external/utils.kt", "stdlib_external/jsCollectionFactoriesActuals.kt" ]
 
     konanArtifacts {
-        program('stdlibTest', targets: [ target ]) {
+        program('stdlibTest', targets: [ targetName ]) {
             srcFiles sources
             baseDir testOutputStdlib
             enableMultiplatform true
@@ -3054,12 +3055,10 @@ task runStdlibTests(type: RunStdlibTest) {
         }
     }
 
-    outputSourceSetName = "testOutputStdlib"
-    // runs all tests and hence source name should be not null
-    source = "stdlib_external/utils.kt"
+    executable = "$testOutputStdlib/$targetName/stdlibTest.${target.family.exeSuffix}"
     useFilter = false
     arguments = [ "--ktest_negative_regex_filter=test.collections.CollectionTest.abstractCollectionToArray" ]
-    runnerLogger = RunKonanTest.Logger.GTEST
+    testLogger = RunnerLogger.GTEST
 
     finalizedBy resultsTask
 }
