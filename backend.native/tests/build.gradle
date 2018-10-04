@@ -150,11 +150,11 @@ task resultsTask() {
         def statistics = new Statistics()
         tasks.withType(RunExternalTestGroup).matching { it.state.executed }.each {
             results.put(it.name, it.results)
-            statistics += it.statistics
+            statistics.add(it.statistics)
         }
         
         tasks.withType(KonanStdlibTestRunner).matching {it.state.executed }.each {
-            statistics += it.statistics
+            statistics.add(it.statistics)
         }
 
         def output = ["statistics": statistics, "tests": results]
