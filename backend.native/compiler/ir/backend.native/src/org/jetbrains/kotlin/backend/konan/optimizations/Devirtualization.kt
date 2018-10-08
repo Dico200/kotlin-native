@@ -1134,52 +1134,23 @@ internal object Devirtualization {
 
         fun IrBuilderWithScope.irDevirtualizedCall(callee: IrCall, actualType: IrType,
                                                    actualCallee: DataFlowIR.FunctionSymbol.Declared,
-                                                   receiver: PossiblyCoercedValue,
-                                                   extensionReceiver: PossiblyCoercedValue?,
-                                                   parameters: Map<ValueParameterDescriptor, PossiblyCoercedValue>) =
+                                                   parameters: List<PossiblyCoercedValue>) =
                 actualCallee.bridgeTarget.let {
                     if (it == null)
                         irDevirtualizedCall(callee, actualType, actualCallee).apply {
-                            putValueArgument(0, receiver.getFullValue(this@irDevirtualizedCall))
-                            val startIndex =
-                                    if (extensionReceiver == null)
-                                        1
-                                    else {
-                                        putValueArgument(1, extensionReceiver.getFullValue(this@irDevirtualizedCall))
-                                        2
-                                    }
-                            callee.descriptor.valueParameters.forEach {
-                                putValueArgument(startIndex + it.index, parameters[it]!!.getFullValue(this@irDevirtualizedCall))
+                            parameters.forEachIndexed { index, value ->
+                                putValueArgument(index, value.getFullValue(this@irDevirtualizedCall))
                             }
                         }
                     else {
                         val bridgeTarget = it.resolved() as DataFlowIR.FunctionSymbol.Declared
                         val callResult = irDevirtualizedCall(callee, actualType, bridgeTarget).apply {
-                            putValueArgument(0, irCoerceIfNeeded(
-                                    type = actualCallee.parameters[0],
-                                    targetType = bridgeTarget.parameters[0],
-                                    possiblyCoercedValue = receiver
-                            ))
-                            val startIndex =
-                                    if (extensionReceiver == null)
-                                        1
-                                    else {
-                                        putValueArgument(1,
-                                                irCoerceIfNeeded(
-                                                        type = actualCallee.parameters[1],
-                                                        targetType = bridgeTarget.parameters[1],
-                                                        possiblyCoercedValue = extensionReceiver)
-                                        )
-                                        2
-                                    }
-                            callee.descriptor.valueParameters.forEach {
-                                this.putValueArgument(startIndex + it.index,
-                                        irCoerceIfNeeded(
-                                                type = actualCallee.parameters[startIndex + it.index],
-                                                targetType = bridgeTarget.parameters[startIndex + it.index],
-                                                possiblyCoercedValue = parameters[it]!!
-                                        )
-                                )
+                            parameters.forEachIndexed { index, value ->
+                                putValueArgument(index, irCoerceIfNeeded(
+                                        type = actualCallee.parameters[index],
+                                        targetType = bridgeTarget.parameters[index],
+                                        possiblyCoercedValue = value
+                                ))
                             }
                         }
                         val returnCoercion = getTypeConversion(bridgeTarget.returnParameter, actualCallee.returnParameter)
@@ -1231,27 +1202,19 @@ internal object Devirtualization {
                         optimize && possibleCallees.size == 1 -> { // Monomorphic callsite.
                             val actualCallee = possibleCallees[0].callee as DataFlowIR.FunctionSymbol.Declared
                             irBlock(expression) {
-                                val receiver = irSplitCoercion(dispatchReceiver, "receiver", function.dispatchReceiverParameter!!.type)
-                                val extensionReceiver = expression.extensionReceiver?.let {
-                                    irSplitCoercion(it, "extensionReceiver", function.extensionReceiverParameter!!.type)
+                                val parameters = expression.getArgumentsWithSymbols().mapIndexed { index, arg ->
+                                    irSplitCoercion(arg.second, "arg$index", arg.first.owner.type)
                                 }
-                                val parameters = expression.descriptor.valueParameters.associate {
-                                    it to irSplitCoercion(expression.getValueArgument(it)!!, "arg${it.index}", function.valueParameters[it.index].type)
-                                }
-                                +irDevirtualizedCall(expression, type, actualCallee, receiver, extensionReceiver, parameters)
+                                +irDevirtualizedCall(expression, type, actualCallee, parameters)
                             }
                         }
 
                         else -> irBlock(expression) {
-                            val receiver = irSplitCoercion(dispatchReceiver, "receiver", function.dispatchReceiverParameter!!.type)
-                            val extensionReceiver = expression.extensionReceiver?.let {
-                                irSplitCoercion(it, "extensionReceiver", function.extensionReceiverParameter!!.type)
-                            }
-                            val parameters = expression.descriptor.valueParameters.associate {
-                                it to irSplitCoercion(expression.getValueArgument(it)!!, "arg${it.index}", function.valueParameters[it.index].type)
+                            val parameters = expression.getArgumentsWithSymbols().mapIndexed { index, arg ->
+                                irSplitCoercion(arg.second, "arg$index", arg.first.owner.type)
                             }
                             val typeInfo = irTemporary(irCall(context.ir.symbols.getObjectTypeInfo).apply {
-                                putValueArgument(0, receiver.getFullValue(this@irBlock))
+                                putValueArgument(0, parameters[0].getFullValue(this@irBlock))
                             })
 
                             val branches = mutableListOf<IrBranchImpl>()
@@ -1280,7 +1243,7 @@ internal object Devirtualization {
                                         startOffset = startOffset,
                                         endOffset   = endOffset,
                                         condition   = condition,
-                                        result      = irDevirtualizedCall(expression, type, actualCallee, receiver, extensionReceiver, parameters)
+                                        result      = irDevirtualizedCall(expression, type, actualCallee, parameters)
                                 )
                             }
                             if (!optimize) { // Add else branch throwing exception for debug purposes.
