@@ -3046,13 +3046,13 @@ task runKonanRegexTests(type: KonanStdlibTestRunner) {
     def sources = getFilesFrom([ "harmony_regex" ], [])
 
     konanArtifacts {
-        program('harmonyRegexTest', targets: [ targetName ]) {
+        program('_harmonyRegexTest', targets: [ targetName ]) {
             srcFiles sources
             baseDir testOutputStdlib
             extraOpts '-tr'
         }
     }
-    executable = "$testOutputStdlib/$targetName/harmonyRegexTest.${target.family.exeSuffix}"
+    executable = "$testOutputStdlib/$targetName/_harmonyRegexTest.${target.family.exeSuffix}"
     useFilter = false
     testLogger = RunnerLogger.GTEST
 
@@ -3066,14 +3066,14 @@ task runStdlibTests(type: KonanStdlibTestRunner) {
             [ 'build/stdlib_external/stdlib/test/internalAnnotations.kt' ])
 
     konanArtifacts {
-        program('stdlibTest', targets: [ targetName ]) {
+        program('_stdlibTest', targets: [ targetName ]) {
             srcFiles sources
             baseDir testOutputStdlib
             enableMultiplatform true
             extraOpts '-tr', "-friend-modules", project.rootProject.file("dist/klib/common/stdlib").absolutePath
         }
     }
-    executable = "$testOutputStdlib/$targetName/stdlibTest.${target.family.exeSuffix}"
+    executable = "$testOutputStdlib/$targetName/_stdlibTest.${target.family.exeSuffix}"
     useFilter = false
     arguments = [ "--ktest_negative_regex_filter=test.collections.CollectionTest.abstractCollectionToArray" ]
     testLogger = RunnerLogger.GTEST
@@ -3101,7 +3101,7 @@ task buildKonanTests {
     def sources = getFilesFrom(compileList, excludeList)
 
     konanArtifacts {
-        program('localTest', targets: [ targetName ]) {
+        program('_localTest', targets: [ targetName ]) {
             srcFiles sources
             baseDir testOutputLocal
             extraOpts '-tr'

@@ -126,7 +126,7 @@ open class KonanLocalTestRunner : KonanTestRunner() {
     init {
         val testOutputLocal = project.findProperty("testOutputLocal")
         val target = project.testTarget()
-        executable = "$testOutputLocal/${target.name}/localTest.${target.family.exeSuffix}"
+        executable = "$testOutputLocal/${target.name}/_localTest.${target.family.exeSuffix}"
     }
 
     @Optional
