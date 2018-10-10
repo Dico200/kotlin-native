@@ -3056,7 +3056,7 @@ task runKonanRegexTests(type: KonanStdlibTestRunner) {
     useFilter = false
     testLogger = RunnerLogger.GTEST
 
-    dependsOn compileKonanHarmonyRegexTest
+    dependsOn compileKonan_harmonyRegexTest
     finalizedBy resultsTask
 }
 
@@ -3078,7 +3078,7 @@ task runStdlibTests(type: KonanStdlibTestRunner) {
     arguments = [ "--ktest_negative_regex_filter=test.collections.CollectionTest.abstractCollectionToArray" ]
     testLogger = RunnerLogger.GTEST
 
-    dependsOn compileKonanStdlibTest
+    dependsOn compileKonan_stdlibTest
     finalizedBy resultsTask
 }
 
@@ -3108,5 +3108,5 @@ task buildKonanTests {
         }
     }
 
-    dependsOn compileKonanLocalTest
+    dependsOn compileKonan_localTest
 }
